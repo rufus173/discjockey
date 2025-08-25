@@ -40,6 +40,7 @@ int main(int argc, char **argv){
 	//for (;Mix_PlayingMusic(););
 	//Mix_FreeMusic(song);
 	//====== cleanup ======
+	queue_free(&queue);
 	Mix_CloseAudio();
 	SDL_Quit();
 	return 0;

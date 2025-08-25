@@ -51,3 +51,8 @@ int queue_load(char **files, int file_count, struct music_queue *queue){
 	}
 	return queue->song_count;
 }
+void queue_free(struct music_queue *queue){
+	for (;queue->song_count > 0; queue->song_count--){
+		Mix_FreeMusic(queue->songs[queue->song_count-1]);
+	}
+}
