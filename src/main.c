@@ -2,9 +2,39 @@
 #include "queue.h"
 #include <SDL_mixer.h>
 #include <unistd.h>
+#include <getopt.h>
+#include <time.h>
 #define sdlerror(str) fprintf(stderr,"%s: %s\n",str,SDL_GetError())
+void print_help(char *name){
+	printf("usage: %s [options] <file 0> ... <file n>\n",name);
+	printf("songs are loaded in the order specified in the command line,\nand alphabeticaly from folders\n");
+	printf("options:\n");
+	printf("	-s, --shuffle  : shuffle the loaded songs\n");
+	printf("	-h, --help     : display this help text\n");
+}
 int main(int argc, char **argv){
-	if (argc < 2){
+	srandom(time(NULL));
+	int shuffle = 0;
+	//====== process arguments ======
+	int option_index = 0;
+	struct option long_opts[] = {
+		{"shuffle",no_argument,0,'s'},
+		{"help",no_argument,0,'h'},
+		{0,0,0,0},
+	};
+	for (;;){
+		int result = getopt_long(argc,argv,"sh",long_opts,&option_index);
+		if (result == -1) break;
+		switch (result){
+			case 's':
+			shuffle = 1;
+			break;
+			case 'h':
+			print_help(argv[0]);
+			return 0;
+		}
+	}
+	if (argc-optind < 1){
 		fprintf(stderr,"No files provided.\n");
 		return 1;
 	}
@@ -24,21 +54,13 @@ int main(int argc, char **argv){
 	//====== load and play some music ======
 	struct music_queue queue;
 	memset(&queue,0,sizeof(struct music_queue));
-	int count = queue_load(argv+1,argc-1,&queue);
+	int count = queue_load(argv+optind,argc-optind,&queue);
 	printf("%d files loaded\n",count);
-	//Mix_Music *song = Mix_LoadMUS(argv[1]);
-	//if (song == NULL){
-	//	sdlerror("Mix_LoadMUS");
-	//	return 1;
-	//}
-	//if (Mix_PlayMusic(song,0) < 0){
-	//	sdlerror("PlayMusic");
-	//	return 1;
-	//}
-	////wait for song to finish
-	//sleep(1);
-	//for (;Mix_PlayingMusic(););
-	//Mix_FreeMusic(song);
+	if (shuffle) queue_shuffle(&queue);
+	printf("====== queue ======\n");
+	for (int i = 0; i < queue.song_count; i++){
+		printf("%s\n",queue.song_names[i]);
+	}
 	//====== cleanup ======
 	queue_free(&queue);
 	Mix_CloseAudio();
