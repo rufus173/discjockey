@@ -69,6 +69,7 @@ void queue_free(struct music_queue *queue){
 		free(queue->song_names[queue->song_count-1]);
 	}
 	free(queue->song_names);
+	free(queue->songs);
 }
 void queue_shuffle(struct music_queue *queue){
 	printf("shuffling...\n");
