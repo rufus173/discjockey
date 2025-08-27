@@ -7,7 +7,8 @@ struct music_queue {
 	Mix_Music **songs;
 	char **song_names;
 	int song_count;
-	int current_song_index;
+	int current_song_index; //the song thats playing
+	int selected_song_index; //where the cursor is
 };
 
 int queue_load(char **files, int file_count, struct music_queue *queue);

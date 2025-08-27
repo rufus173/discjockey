@@ -36,6 +36,12 @@
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
 
+enum colour_pairs {
+	PAIR_DEFAULT = 1,
+	PAIR_BLACK_WHITE,
+	PAIR_DEFAULT_REVERSE,
+};
+
 void queue_window_update(WINDOW *queue_window,struct music_queue *queue);
 wchar_t *str_to_wchar(char *str);
 
@@ -98,6 +104,11 @@ int main(int argc, char **argv){
 	//====== init ncurses ======
 	setlocale(LC_ALL,"");
 	initscr();
+	use_default_colors(); //transparent background
+	start_color();
+	//init_pair(PAIR_DEFAULT,-1,-1);
+	init_pair(PAIR_DEFAULT,-1,-1);
+	init_pair(PAIR_BLACK_WHITE,COLOR_BLACK,COLOR_WHITE);
 	keypad(stdscr,1);
 	noecho();
 	refresh();
@@ -138,13 +149,13 @@ int main(int argc, char **argv){
 			switch (ch){
 				case KEY_DOWN:
 				//bounds check
-				if (queue.current_song_index >= queue.song_count-1) break;
-				queue.current_song_index++;
+				if (queue.selected_song_index >= queue.song_count-1) break;
+				queue.selected_song_index++;
 				break;
 				case KEY_UP:
 				//bounds check
-				if (queue.current_song_index <= 0) break;
-				queue.current_song_index--;
+				if (queue.selected_song_index <= 0) break;
+				queue.selected_song_index--;
 				break;
 				case 'q':
 				loop = 0;
@@ -171,15 +182,18 @@ void queue_window_update(WINDOW *window,struct music_queue *queue){
 	//so like when you scroll down and the highlight moves down untill it
 	//gets to the middle, then the list scrolls and the highlight stays in the middle
 	//but then when it gets to the end it goes to the bottom
-	int highlight_top_offset = (queue->current_song_index-height-2) ? MIN(queue->current_song_index,(height-2)/2) : 0;
+	//im not realy sure how this one liner works but i just made it from experimentation
+	int highlight_top_offset = (queue->song_count-queue->selected_song_index-(height%2) > (height-2)/2) ? MIN(queue->selected_song_index,((height-2)/2)) : ((height-2))-(queue->song_count-queue->selected_song_index);
 	//====== print the queue ======
 	int y = 0;
-	for (int i = queue->current_song_index-highlight_top_offset; i < queue->song_count; i++){
+	for (int i = MAX(0,queue->selected_song_index-highlight_top_offset); i < queue->song_count; i++){
 		if (y >= height-2) break;
 		//wow isnt this function name so easy to understand
 		//wide char string to multi byte string
 		//bro c programmers will do anything but write out the name in full
 		mvwaddnwstr(window,y+1,1,str_to_wchar(queue->song_names[i]),width-2);
+		if (i == queue->selected_song_index) mvwchgat(window,y+1,1,width-2,A_UNDERLINE | A_DIM,PAIR_DEFAULT,NULL);
+		if (i == queue->current_song_index) mvwchgat(window,y+1,1,width-2,A_REVERSE,PAIR_DEFAULT,NULL);
 		y++;
 	}
 	wrefresh(window);
