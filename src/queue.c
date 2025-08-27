@@ -8,11 +8,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-static void swap_ptr(void **a, void **b){
-	void *temp = *a;
-	*a = *b;
-	*b = temp;
-}
+//static void swap_ptr(void **a, void **b){
+//	void *temp = *a;
+//	*a = *b;
+//	*b = temp;
+//}
 
 int scandir_filter(const struct dirent *ent){
 	return strcmp(ent->d_name,".") && strcmp(ent->d_name,"..");
@@ -34,11 +34,10 @@ int queue_load(char **files, int file_count, struct music_queue *queue){
 			Mix_Music *song = Mix_LoadMUS(files[i]);
 			if (song != NULL){
 				queue->song_count++;
-				queue->songs = realloc(queue->songs,sizeof(Mix_Music *)*queue->song_count);
-				queue->songs[queue->song_count-1] = song;
-				queue->song_names = realloc(queue->song_names,sizeof(char *)*queue->song_count);
+				queue->songs = realloc(queue->songs,sizeof(struct song)*queue->song_count);
+				queue->songs[queue->song_count-1].song = song;
 				char *filename_cpy = strdup(files[i]);
-				queue->song_names[queue->song_count-1] = strdup(basename(filename_cpy));
+				queue->songs[queue->song_count-1].name = strdup(basename(filename_cpy));
 				free(filename_cpy);
 			}
 			break;
@@ -65,10 +64,10 @@ int queue_load(char **files, int file_count, struct music_queue *queue){
 }
 void queue_free(struct music_queue *queue){
 	for (;queue->song_count > 0; queue->song_count--){
-		Mix_FreeMusic(queue->songs[queue->song_count-1]);
-		free(queue->song_names[queue->song_count-1]);
+		struct song *song = &queue->songs[queue->song_count-1];
+		Mix_FreeMusic(song->song);
+		free(song->name);
 	}
-	free(queue->song_names);
 	free(queue->songs);
 }
 void queue_shuffle(struct music_queue *queue){
@@ -77,8 +76,9 @@ void queue_shuffle(struct music_queue *queue){
 	for (int i = queue->song_count-1; i >= 0; i--){
 		int pos = random() % (i+1);
 		//swap
-		swap_ptr((void **)(queue->songs+pos),(void **)(queue->songs+i));
-		swap_ptr((void **)(queue->song_names+pos),(void **)(queue->song_names+i));
-
+		struct song temp;
+		memcpy(&temp,queue->songs+i,sizeof(struct song));
+		memmove(queue->songs+i,queue->songs+pos,sizeof(struct song));
+		memcpy(queue->songs+pos,&temp,sizeof(struct song));
 	}
 }

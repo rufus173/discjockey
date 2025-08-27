@@ -3,9 +3,14 @@
 
 #include <SDL_mixer.h>
 
+struct song {
+	Mix_Music *song;
+	char *name;
+};
 struct music_queue {
-	Mix_Music **songs;
-	char **song_names;
+	//Mix_Music **songs;
+	//char **song_names;
+	struct song *songs;
 	int song_count;
 	int current_song_index; //the song thats playing
 	int selected_song_index; //where the cursor is

@@ -106,7 +106,7 @@ int main(int argc, char **argv){
 	if (shuffle) queue_shuffle(&queue);
 	printf("====== queue ======\n");
 	for (int i = 0; i < queue.song_count; i++){
-		printf("%s\n",queue.song_names[i]);
+		printf("%s\n",queue.songs[i].name);
 	}
 	//====== init ncurses ======
 	setlocale(LC_ALL,"");
@@ -198,7 +198,7 @@ void queue_window_update(WINDOW *window,struct music_queue *queue){
 		//wow isnt this function name so easy to understand
 		//wide char string to multi byte string
 		//bro c programmers will do anything but write out the name in full
-		mvwaddnwstr(window,y+1,1,str_to_wchar(queue->song_names[i]),width-2);
+		mvwaddnwstr(window,y+1,1,str_to_wchar(queue->songs[i].name),width-2);
 		if (i == queue->selected_song_index) mvwchgat(window,y+1,1,width-2,A_UNDERLINE | A_DIM,PAIR_DEFAULT,NULL);
 		if (i == queue->current_song_index) mvwchgat(window,y+1,1,width-2,A_REVERSE,PAIR_DEFAULT,NULL);
 		y++;
