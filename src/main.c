@@ -44,7 +44,7 @@ enum colour_pairs {
 
 void queue_window_update(WINDOW *queue_window,struct music_queue *queue);
 void playback_status_window_update(WINDOW *playback_status_window,struct music_queue *queue);
-wchar_t *str_to_wchar(char *str);
+wchar_t *str_to_wchar(const char *str);
 
 void print_help(char *name){
 	printf("usage: %s [options] <file 0> ... <file n>\n",name);
@@ -237,7 +237,7 @@ void queue_window_update(WINDOW *window,struct music_queue *queue){
 	wmove(window,cursor_y+1,1);
 	wrefresh(window);
 }
-wchar_t *str_to_wchar(char *str){
+wchar_t *str_to_wchar(const char *str){
 	static wchar_t buffer[4096]; //probs big enough
 	//at least the naming scheme here is sensible
 	size_t count = mbstowcs(buffer,str,4096);
@@ -265,6 +265,9 @@ void playback_status_window_update(WINDOW *window,struct music_queue *queue){
 	int seconds_elapsed = Mix_GetMusicPosition(queue->songs[queue->current_song_index].song);
 	int seconds_remaining = Mix_MusicDuration(queue->songs[queue->current_song_index].song);
 	mvwprintw(window,1,12,"%d:%02d / %d:%02d",seconds_elapsed/60,seconds_elapsed%60,seconds_remaining/60,seconds_remaining%60);
+	//print artist and song name
+	mvwaddnwstr(window,2,1,str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)),width-2);
+	mvwaddnwstr(window,3,1,str_to_wchar(Mix_GetMusicArtistTag(queue->songs[queue->current_song_index].song)),width-2);
 	//refresh
 	wrefresh(window);
 }
