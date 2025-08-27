@@ -82,3 +82,27 @@ void queue_shuffle(struct music_queue *queue){
 		memcpy(queue->songs+pos,&temp,sizeof(struct song));
 	}
 }
+int queue_play(struct music_queue *queue){
+	queue->playback_status = PLAYBACK_PLAYING;
+	queue->current_song_index = queue->selected_song_index;
+	return Mix_PlayMusic(queue->songs[queue->current_song_index].song,0);
+}
+int queue_pause(struct music_queue *queue){
+	queue->playback_status = PLAYBACK_PAUSED;
+	Mix_PauseMusic();
+	return 0;
+}
+int queue_resume(struct music_queue *queue){
+	queue->playback_status = PLAYBACK_PLAYING;
+	Mix_ResumeMusic();
+	return 0;
+}
+int queue_pause_resume(struct music_queue *queue){
+	if (queue->playback_status == PLAYBACK_PLAYING) return queue_pause(queue);
+	if (queue->playback_status == PLAYBACK_PAUSED) return queue_resume(queue);
+	return -1;
+}
+int queue_next(struct music_queue *queue){
+	queue->current_song_index++;
+	return queue_play(queue);
+}

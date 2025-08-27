@@ -43,14 +43,16 @@ enum colour_pairs {
 };
 
 void queue_window_update(WINDOW *queue_window,struct music_queue *queue);
+void playback_status_window_update(WINDOW *playback_status_window,struct music_queue *queue);
 wchar_t *str_to_wchar(char *str);
 
 void print_help(char *name){
 	printf("usage: %s [options] <file 0> ... <file n>\n",name);
 	printf("songs are loaded in the order specified in the command line,\nand alphabeticaly from folders\n");
 	printf("options:\n");
-	printf("	-s, --shuffle  : shuffle the loaded songs\n");
-	printf("	-h, --help     : display this help text\n");
+	printf("	-s, --shuffle          : shuffle the loaded songs\n");
+	printf("	-h, --help             : display this help text\n");
+	printf("	-d, --disable-autoplay : disable autoplay\n");
 	printf("controls:\n");
 	printf("	q : quit");
 	printf("	up arrow : move cursor up");
@@ -62,11 +64,13 @@ void print_help(char *name){
 int main(int argc, char **argv){
 	srandom(time(NULL));
 	int shuffle = 0;
+	int autoplay = 1;
 	//====== process arguments ======
 	int option_index = 0;
 	struct option long_opts[] = {
 		{"shuffle",no_argument,0,'s'},
 		{"help",no_argument,0,'h'},
+		{"disable-autoplay",no_argument,0,'d'},
 		{0,0,0,0},
 	};
 	for (;;){
@@ -79,6 +83,9 @@ int main(int argc, char **argv){
 			case 'h':
 			print_help(argv[0]);
 			return 0;
+			case 'd':
+			autoplay = 0;
+			break;
 		}
 	}
 	if (argc-optind < 1){
@@ -122,21 +129,23 @@ int main(int argc, char **argv){
 	//create windows
 	/*
 	+-----+-----+-----+
-	|settings   |     |
-	|(loop etc.)|  q  |
-	+-----+-----+  u  +
-	|song name  |  e  |
-	|artist     |  u  |
+	|cover art  |     |
+	|           |  q  |
+	+           +  u  +
+	|           |  e  |
+	|           |  u  |
 	+-----+-----+  e  +
 	|playing or |     |
 	|paused     |     |
 	+-----+-----+-----+
 	*/
+	//rows and columns start from bottom left
 	//column 1 witdh	row 1 height
 	int c1w = COLS/3;	int r1h = LINES/3;
 	int c2w = COLS/3;	int r2h = LINES/3;
 	int c3w = COLS-c1w-c2w;	int r3h = LINES-r1h-r2h;
 	WINDOW *queue_window = newwin(LINES,c3w,0,c1w+c2w-1);
+	WINDOW *playback_status_window = newwin(r3h,c1w+c2w-1,r1h+r2h,0);
 	//====== run the update loop ======
 	for (int loop = 1;loop;){
 		//wait for poll to come back
@@ -154,6 +163,7 @@ int main(int argc, char **argv){
 			//====== handle input ======
 			int ch = getch();
 			switch (ch){
+				//====== scrolling up and down ======
 				case KEY_DOWN:
 				//bounds check
 				if (queue.selected_song_index >= queue.song_count-1) break;
@@ -164,15 +174,29 @@ int main(int argc, char **argv){
 				if (queue.selected_song_index <= 0) break;
 				queue.selected_song_index--;
 				break;
+				//====== quit ======
 				case 'q':
 				loop = 0;
 				break;
+				//====== back to current song ======
 				case 'b':
 				queue.selected_song_index = queue.current_song_index;
 				break;
+				//====== start song ======
+				case '\n':
+				queue_play(&queue);
+				break;
+				//====== pausing/resuming ======
+				case ' ':
+				queue_pause_resume(&queue);
+				break;
 			}
 		}
+		//====== autoplay ======
+		if (autoplay && !Mix_PlayingMusic()) queue_next(&queue);
 		//====== update windows ======
+		playback_status_window_update(playback_status_window,&queue);
+		//this goes last as it moves the cursor to its final position
 		queue_window_update(queue_window,&queue);
 	}
 	//====== cleanup ======
@@ -196,21 +220,34 @@ void queue_window_update(WINDOW *window,struct music_queue *queue){
 	int highlight_top_offset = (queue->song_count-queue->selected_song_index-(height%2) > (height-2)/2) ? MIN(queue->selected_song_index,((height-2)/2)) : ((height-2))-(queue->song_count-queue->selected_song_index);
 	//====== print the queue ======
 	int y = 0;
+	int cursor_y = 0;
 	for (int i = MAX(0,queue->selected_song_index-highlight_top_offset); i < queue->song_count; i++){
 		if (y >= height-2) break;
 		//wow isnt this function name so easy to understand
-		//wide char string to multi byte string
-		//bro c programmers will do anything but write out the name in full
 		mvwaddnwstr(window,y+1,1,str_to_wchar(queue->songs[i].name),width-2);
 		if (i == queue->selected_song_index) mvwchgat(window,y+1,1,width-2,A_UNDERLINE | A_DIM,PAIR_DEFAULT,NULL);
+		if (i == queue->selected_song_index) cursor_y = y;
 		if (i == queue->current_song_index) mvwchgat(window,y+1,1,width-2,A_REVERSE,PAIR_DEFAULT,NULL);
 		y++;
 	}
+	//move cursor to current selection
+	wmove(window,cursor_y+1,1);
 	wrefresh(window);
 }
 wchar_t *str_to_wchar(char *str){
 	static wchar_t buffer[4096]; //probs big enough
+	//at least the naming scheme here is sensible
 	size_t count = mbstowcs(buffer,str,4096);
 	if (count == -1) wcscpy(buffer,L"Error");
 	return buffer;
+}
+void playback_status_window_update(WINDOW *window,struct music_queue *queue){
+	int width,height;
+	getmaxyx(window,height,width);
+	//border and such
+	werase(window);
+	box_set(window,0,0);
+	//window "title"
+	mvwaddnwstr(window,0,1,L"┤playback status├",width-2);
+	wrefresh(window);
 }
