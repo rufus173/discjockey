@@ -53,7 +53,7 @@ wchar_t *str_to_wchar(const char *str);
 
 void print_help(char *name){
 	printf("usage: %s [options] <file 0> ... <file n>\n",name);
-	printf("songs are loaded in the order specified in the command line,\nand alphabeticaly from folders\n");
+	printf("songs are loaded in the order specified in the command line,\nand numericaly then alphabeticaly from folders\n");
 	printf("options:\n");
 	printf("	-s, --shuffle          : shuffle the loaded songs\n");
 	printf("	-h, --help             : display this help text\n");

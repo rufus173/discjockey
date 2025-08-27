@@ -14,6 +14,16 @@
 //	*b = temp;
 //}
 
+int scandir_sort(const struct dirent **ent1, const struct dirent **ent2){
+	//try to interpret an integer at the front
+	int number1 = strtol((*ent1)->d_name,NULL,10);
+	int number2 = strtol((*ent2)->d_name,NULL,10);
+	if (number1 == number2){
+		return strcoll((*ent1)->d_name,(*ent2)->d_name);
+	}else{
+		return number1-number2;
+	}
+}
 int scandir_filter(const struct dirent *ent){
 	return strcmp(ent->d_name,".") && strcmp(ent->d_name,"..");
 }
@@ -45,7 +55,7 @@ int queue_load(char **files, int file_count, struct music_queue *queue){
 			//if dir, call recursively with the contents of the directory
 			struct dirent **dir_list;
 			char **name_list = NULL;
-			int count = scandir(files[i],&dir_list,scandir_filter,alphasort);
+			int count = scandir(files[i],&dir_list,scandir_filter,scandir_sort);
 			if (count > 0){
 				name_list = malloc(sizeof(char *)*count);
 				for (int j = 0; j < count; j++){
