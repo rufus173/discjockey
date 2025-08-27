@@ -1,4 +1,6 @@
 #include <SDL.h>
+#include <sys/ioctl.h>
+#include <errno.h>
 #include <locale.h>
 #include <poll.h>
 #include <fcntl.h>
@@ -32,6 +34,8 @@
      ...  ...                                     
 */
 
+volatile sig_atomic_t sigwinch_occured = 0;
+
 #define sdlerror(str) fprintf(stderr,"%s: %s\n",str,SDL_GetError())
 #define MIN(a,b) (((a) < (b)) ? (a) : (b))
 #define MAX(a,b) (((a) > (b)) ? (a) : (b))
@@ -44,6 +48,7 @@ enum colour_pairs {
 
 void queue_window_update(WINDOW *queue_window,struct music_queue *queue);
 void playback_status_window_update(WINDOW *playback_status_window,struct music_queue *queue);
+void sigwinch_handler(int sig);
 wchar_t *str_to_wchar(const char *str);
 
 void print_help(char *name){
@@ -118,6 +123,7 @@ int main(int argc, char **argv){
 	//====== init ncurses ======
 	setlocale(LC_ALL,"");
 	initscr();
+	signal(SIGWINCH,sigwinch_handler);
 	use_default_colors(); //transparent background
 	start_color();
 	//init_pair(PAIR_DEFAULT,-1,-1);
@@ -157,7 +163,7 @@ int main(int argc, char **argv){
 		};
 		//                              msecs
 		int result = poll(&stdin_poll,1,100);
-		if (result < 0){
+		if (result < 0 && errno != EINTR){
 			perror("poll");
 			break;
 		}
@@ -197,6 +203,28 @@ int main(int argc, char **argv){
 		//====== autoplay ======
 		if (!Mix_PlayingMusic()) queue.playback_status = PLAYBACK_STOPPED;
 		if (autoplay && !Mix_PlayingMusic()) queue_next(&queue);
+		//====== handle sigwinch ======
+		if (sigwinch_occured){
+			sigwinch_occured = 0;
+			//resize the screen
+			struct winsize size;
+			int result = ioctl(STDOUT_FILENO,TIOCGWINSZ, &size);
+			if (result == 0) resizeterm(size.ws_row,size.ws_col);
+			//resize windows
+			int lines,cols;
+			getmaxyx(stdscr,lines,cols);
+			int c1w = cols/3;	int r1h = lines/3;
+			int c2w = cols/3;	int r2h = lines/3;
+			int c3w = cols-c1w-c2w;	int r3h = lines-r1h-r2h;
+			//delete old windows
+			delwin(queue_window);
+			delwin(playback_status_window);
+			clear();
+			refresh();
+			//make new windows
+			queue_window = newwin(LINES,c3w,0,c1w+c2w-1);
+			playback_status_window = newwin(r3h,c1w+c2w-1,r1h+r2h,0);
+		}
 		//====== update windows ======
 		playback_status_window_update(playback_status_window,&queue);
 		//this goes last as it moves the cursor to its final position
@@ -258,16 +286,19 @@ void playback_status_window_update(WINDOW *window,struct music_queue *queue){
 	else spinner_state = L'#';
 	mvwaddnwstr(window,1,1,&spinner_state,1);
 	//display playing state
-	if (queue->playback_status == PLAYBACK_PLAYING) mvwaddwstr(window,1,3,L"Playing");
-	else if (queue->playback_status == PLAYBACK_PAUSED) mvwaddwstr(window,1,3,L"Paused");
-	else mvwaddwstr(window,1,3,L"Stopped");
+	if (width >= 12 &&queue->playback_status == PLAYBACK_PLAYING) mvwaddwstr(window,1,3,L"Playing");
+	else if (width >= 12 && queue->playback_status == PLAYBACK_PAUSED) mvwaddwstr(window,1,3,L"Paused");
+	else if (width >= 12) mvwaddwstr(window,1,3,L"Stopped");
 	//print time remaining
 	int seconds_elapsed = Mix_GetMusicPosition(queue->songs[queue->current_song_index].song);
 	int seconds_remaining = Mix_MusicDuration(queue->songs[queue->current_song_index].song);
-	mvwprintw(window,1,12,"%d:%02d / %d:%02d",seconds_elapsed/60,seconds_elapsed%60,seconds_remaining/60,seconds_remaining%60);
+	if (width >= 24) mvwprintw(window,1,12,"%d:%02d / %d:%02d",seconds_elapsed/60,seconds_elapsed%60,seconds_remaining/60,seconds_remaining%60);
 	//print artist and song name
-	mvwaddnwstr(window,2,1,str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)),width-2);
-	mvwaddnwstr(window,3,1,str_to_wchar(Mix_GetMusicArtistTag(queue->songs[queue->current_song_index].song)),width-2);
+	if (height >= 4) mvwaddnwstr(window,2,1,str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)),width-2);
+	if (height >= 5) mvwaddnwstr(window,3,1,str_to_wchar(Mix_GetMusicArtistTag(queue->songs[queue->current_song_index].song)),width-2);
 	//refresh
 	wrefresh(window);
+}
+void sigwinch_handler(int sig){
+	sigwinch_occured = 1;
 }
