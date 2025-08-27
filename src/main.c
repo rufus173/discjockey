@@ -74,7 +74,7 @@ int main(int argc, char **argv){
 		{0,0,0,0},
 	};
 	for (;;){
-		int result = getopt_long(argc,argv,"sh",long_opts,&option_index);
+		int result = getopt_long(argc,argv,"shd",long_opts,&option_index);
 		if (result == -1) break;
 		switch (result){
 			case 's':
@@ -146,6 +146,8 @@ int main(int argc, char **argv){
 	int c3w = COLS-c1w-c2w;	int r3h = LINES-r1h-r2h;
 	WINDOW *queue_window = newwin(LINES,c3w,0,c1w+c2w-1);
 	WINDOW *playback_status_window = newwin(r3h,c1w+c2w-1,r1h+r2h,0);
+	//====== start the first song ======
+	if (autoplay) queue_play(&queue);
 	//====== run the update loop ======
 	for (int loop = 1;loop;){
 		//wait for poll to come back
@@ -249,5 +251,6 @@ void playback_status_window_update(WINDOW *window,struct music_queue *queue){
 	box_set(window,0,0);
 	//window "title"
 	mvwaddnwstr(window,0,1,L"┤playback status├",width-2);
+
 	wrefresh(window);
 }
