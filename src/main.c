@@ -195,6 +195,7 @@ int main(int argc, char **argv){
 			}
 		}
 		//====== autoplay ======
+		if (!Mix_PlayingMusic()) queue.playback_status = PLAYBACK_STOPPED;
 		if (autoplay && !Mix_PlayingMusic()) queue_next(&queue);
 		//====== update windows ======
 		playback_status_window_update(playback_status_window,&queue);
@@ -251,6 +252,19 @@ void playback_status_window_update(WINDOW *window,struct music_queue *queue){
 	box_set(window,0,0);
 	//window "title"
 	mvwaddnwstr(window,0,1,L"┤playback status├",width-2);
-
+	//render a spinner
+	wchar_t spinner_state;
+	if (queue->playback_status == PLAYBACK_PLAYING) spinner_state = L"-\\|/"[time(NULL)%4];
+	else spinner_state = L'#';
+	mvwaddnwstr(window,1,1,&spinner_state,1);
+	//display playing state
+	if (queue->playback_status == PLAYBACK_PLAYING) mvwaddwstr(window,1,3,L"Playing");
+	else if (queue->playback_status == PLAYBACK_PAUSED) mvwaddwstr(window,1,3,L"Paused");
+	else mvwaddwstr(window,1,3,L"Stopped");
+	//print time remaining
+	int seconds_elapsed = Mix_GetMusicPosition(queue->songs[queue->current_song_index].song);
+	int seconds_remaining = Mix_MusicDuration(queue->songs[queue->current_song_index].song);
+	mvwprintw(window,1,12,"%d:%02d / %d:%02d",seconds_elapsed/60,seconds_elapsed%60,seconds_remaining/60,seconds_remaining%60);
+	//refresh
 	wrefresh(window);
 }

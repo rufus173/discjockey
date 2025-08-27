@@ -104,6 +104,7 @@ int queue_pause_resume(struct music_queue *queue){
 }
 int queue_next(struct music_queue *queue){
 	if (queue->current_song_index+1 >= queue->song_count) return 1;
+	queue->playback_status = PLAYBACK_PLAYING;
 	queue->current_song_index++;
 	return Mix_PlayMusic(queue->songs[queue->current_song_index].song,0);
 }
