@@ -167,6 +167,9 @@ int main(int argc, char **argv){
 				case 'q':
 				loop = 0;
 				break;
+				case 'b':
+				queue.selected_song_index = queue.current_song_index;
+				break;
 			}
 		}
 		//====== update windows ======
