@@ -51,6 +51,13 @@ void print_help(char *name){
 	printf("options:\n");
 	printf("	-s, --shuffle  : shuffle the loaded songs\n");
 	printf("	-h, --help     : display this help text\n");
+	printf("controls:\n");
+	printf("	q : quit");
+	printf("	up arrow : move cursor up");
+	printf("	down arrow : move cursor down");
+	printf("	enter : play selected song");
+	printf("	space : pause/play");
+	printf("	b : jump to current song");
 }
 int main(int argc, char **argv){
 	srandom(time(NULL));
