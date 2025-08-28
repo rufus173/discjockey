@@ -68,6 +68,10 @@ void print_help(char *name){
 	printf("	b           : jump to current song\n");
 	printf("	right arrow : skip forward 5 seconds\n");
 	printf("	left arrow  : skip back 5 seconds\n");
+	printf("	page up     : up one page\n");
+	printf("	page down   : down one page\n");
+	printf("	g           : to start of list\n");
+	printf("	G           : to end of list\n");
 }
 int main(int argc, char **argv){
 	srandom(time(NULL));
@@ -213,6 +217,21 @@ int main(int argc, char **argv){
 				position = Mix_GetMusicPosition(queue.songs[queue.current_song_index].song);
 				Mix_SetMusicPosition(MAX(position-5,0));
 				break;
+				//====== g and G to seek to top and bottom ======
+				case 'g':
+				queue.selected_song_index = 0;
+				break;
+				case 'G':
+				queue.selected_song_index = queue.song_count-1;
+				break;
+				//====== page up and down ======
+				case KEY_NPAGE:
+				queue.selected_song_index = MIN(queue.song_count-1,queue.selected_song_index+LINES-2);
+				break;
+				case KEY_PPAGE:
+				queue.selected_song_index = MAX(0,queue.selected_song_index-LINES+2);
+				break;
+
 			}
 		}
 		//====== autoplay ======
