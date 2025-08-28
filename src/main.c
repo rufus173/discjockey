@@ -1,4 +1,5 @@
 #include <SDL.h>
+#include "visualiser.h"
 #include <sys/ioctl.h>
 #include <errno.h>
 #include <locale.h>
@@ -112,6 +113,8 @@ int main(int argc, char **argv){
 		sdlerror("Mix_OpenAudio");
 		return 1;
 	}
+	//setup mixer callback for the visualiser
+	Mix_SetPostMix(visualiser_callback,NULL);
 	//====== load music ======
 	struct music_queue queue;
 	memset(&queue,0,sizeof(struct music_queue));
@@ -154,6 +157,7 @@ int main(int argc, char **argv){
 	int c3w = COLS-c1w-c2w;	int r3h = LINES-r1h-r2h;
 	WINDOW *queue_window = newwin(LINES,c3w,0,c1w+c2w-1);
 	WINDOW *playback_status_window = newwin(r3h,c1w+c2w-1,r1h+r2h,0);
+	WINDOW *visualiser_window = newwin(r1h+r2h,c1w+c2w-1,0,0);
 	//====== start the first song ======
 	if (autoplay) queue_play(&queue);
 	//====== run the update loop ======
@@ -164,7 +168,7 @@ int main(int argc, char **argv){
 			.events = POLLIN,
 		};
 		//                              msecs
-		int result = poll(&stdin_poll,1,100);
+		int result = poll(&stdin_poll,1,1);
 		if (result < 0 && errno != EINTR){
 			perror("poll");
 			break;
@@ -230,14 +234,17 @@ int main(int argc, char **argv){
 			//delete old windows
 			delwin(queue_window);
 			delwin(playback_status_window);
+			delwin(visualiser_window);
 			clear();
 			refresh();
 			//make new windows
 			queue_window = newwin(LINES,c3w,0,c1w+c2w-1);
 			playback_status_window = newwin(r3h,c1w+c2w-1,r1h+r2h,0);
+			visualiser_window = newwin(r1h+r2h,c1w+c2w-1,0,0);
 		}
 		//====== update windows ======
 		playback_status_window_update(playback_status_window,&queue);
+		visualiser_window_update(visualiser_window,&queue);
 		//this goes last as it moves the cursor to its final position
 		queue_window_update(queue_window,&queue);
 	}
