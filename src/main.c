@@ -60,11 +60,11 @@ void print_help(char *name){
 	printf("	-d, --disable-autoplay : disable autoplay\n");
 	printf("controls:\n");
 	printf("	q : quit");
-	printf("	up arrow : move cursor up");
-	printf("	down arrow : move cursor down");
-	printf("	enter : play selected song");
-	printf("	space : pause/play");
-	printf("	b : jump to current song");
+	printf("	up arrow : move cursor up\n");
+	printf("	down arrow : move cursor down\n");
+	printf("	enter : play selected song\n");
+	printf("	space : pause/play\n");
+	printf("	b : jump to current song\n");
 }
 int main(int argc, char **argv){
 	srandom(time(NULL));
