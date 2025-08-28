@@ -59,12 +59,14 @@ void print_help(char *name){
 	printf("	-h, --help             : display this help text\n");
 	printf("	-d, --disable-autoplay : disable autoplay\n");
 	printf("controls:\n");
-	printf("	q : quit");
-	printf("	up arrow : move cursor up\n");
-	printf("	down arrow : move cursor down\n");
-	printf("	enter : play selected song\n");
-	printf("	space : pause/play\n");
-	printf("	b : jump to current song\n");
+	printf("	q           : quit\n");
+	printf("	up arrow    : move cursor up\n");
+	printf("	down arrow  : move cursor down\n");
+	printf("	enter       : play selected song\n");
+	printf("	space       : pause/play\n");
+	printf("	b           : jump to current song\n");
+	printf("	right arrow : skip forward 5 seconds\n");
+	printf("	left arrow  : skip back 5 seconds\n");
 }
 int main(int argc, char **argv){
 	srandom(time(NULL));
@@ -197,6 +199,15 @@ int main(int argc, char **argv){
 				//====== pausing/resuming ======
 				case ' ':
 				queue_pause_resume(&queue);
+				break;
+				//====== seek with right and left ======
+				case KEY_RIGHT:
+				double position = Mix_GetMusicPosition(queue.songs[queue.current_song_index].song);
+				Mix_SetMusicPosition(position+5);
+				break;
+				case KEY_LEFT:
+				position = Mix_GetMusicPosition(queue.songs[queue.current_song_index].song);
+				Mix_SetMusicPosition(MAX(position-5,0));
 				break;
 			}
 		}
