@@ -3,6 +3,7 @@
 
 It is a terminal based music player, that can load individual or directories of songs and optionaly shuffle them. It has an interface for selecting songs and optional autoplay, with a status bar to display what is playing, and a nonsensical visualiser based off the raw audio data.
 But, the best way to see what it is is to use it.
+<img width="953" height="519" alt="image" src="https://github.com/rufus173/discjockey/blob/b68ea4d4f333152663755e505c15c11373e2374a/screenshot.png" />
 
 # Requirements
 
