@@ -14,6 +14,15 @@
 //	*b = temp;
 //}
 
+char *normalise_path(char *path){
+	for (int i = 1; i < strlen(path); i++){
+		if (path[i-1] == '/' && path[i] == '/'){
+			memmove(path+i,path+i+1,strlen(path+i+1)+1);
+			i--;
+		}
+	}
+	return path;
+}
 int scandir_sort(const struct dirent **ent1, const struct dirent **ent2){
 	//try to interpret an integer at the front
 	int number1 = strtol((*ent1)->d_name,NULL,10);
@@ -46,6 +55,7 @@ int queue_load(char **files, int file_count, struct music_queue *queue){
 				queue->song_count++;
 				queue->songs = realloc(queue->songs,sizeof(struct song)*queue->song_count);
 				queue->songs[queue->song_count-1].song = song;
+				queue->songs[queue->song_count-1].path = normalise_path(strdup(files[i]));
 				char *filename_cpy = strdup(files[i]);
 				queue->songs[queue->song_count-1].name = strdup(basename(filename_cpy));
 				free(filename_cpy);
@@ -77,6 +87,7 @@ void queue_free(struct music_queue *queue){
 		struct song *song = &queue->songs[queue->song_count-1];
 		Mix_FreeMusic(song->song);
 		free(song->name);
+		free(song->path);
 	}
 	free(queue->songs);
 }

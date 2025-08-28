@@ -305,8 +305,9 @@ void playback_status_window_update(WINDOW *window,struct music_queue *queue){
 	int seconds_remaining = Mix_MusicDuration(queue->songs[queue->current_song_index].song);
 	if (width >= 24) mvwprintw(window,1,12,"%d:%02d / %d:%02d",seconds_elapsed/60,seconds_elapsed%60,seconds_remaining/60,seconds_remaining%60);
 	//print artist and song name
-	if (height >= 4) mvwaddnwstr(window,2,1,str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)),width-2);
-	if (height >= 5) mvwaddnwstr(window,3,1,str_to_wchar(Mix_GetMusicArtistTag(queue->songs[queue->current_song_index].song)),width-2);
+	if (height >= 4) mvwaddnwstr(window,2,1,str_to_wchar(queue->songs[queue->current_song_index].path),width-2);
+	if (height >= 5) mvwaddnwstr(window,3,1,str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)),width-2);
+	if (height >= 6) mvwaddnwstr(window,4,1,str_to_wchar(Mix_GetMusicArtistTag(queue->songs[queue->current_song_index].song)),width-2);
 	//refresh
 	wrefresh(window);
 }

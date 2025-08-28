@@ -6,6 +6,7 @@
 struct song {
 	Mix_Music *song;
 	char *name;
+	char *path;
 };
 enum playback_status {
 	PLAYBACK_STOPPED = 0,
