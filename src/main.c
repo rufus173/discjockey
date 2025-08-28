@@ -168,7 +168,7 @@ int main(int argc, char **argv){
 			.events = POLLIN,
 		};
 		//                              msecs
-		int result = poll(&stdin_poll,1,1);
+		int result = poll(&stdin_poll,1,5);
 		if (result < 0 && errno != EINTR){
 			perror("poll");
 			break;
