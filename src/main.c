@@ -59,6 +59,7 @@ void print_help(char *name){
 	printf("	-s, --shuffle          : shuffle the loaded songs\n");
 	printf("	-h, --help             : display this help text\n");
 	printf("	-d, --disable-autoplay : disable autoplay\n");
+	printf("	-r, --repeat-all       : repeat whole playlist\n");
 	printf("controls:\n");
 	printf("	q           : quit\n");
 	printf("	up arrow    : move cursor up\n");
@@ -72,21 +73,26 @@ void print_help(char *name){
 	printf("	page down   : down one page\n");
 	printf("	g           : to start of list\n");
 	printf("	G           : to end of list\n");
+	printf("	r           : toggles repeat off, one and all\n");
 }
 int main(int argc, char **argv){
 	srandom(time(NULL));
 	int shuffle = 0;
 	int autoplay = 1;
+	//====== memset a queue ======
+	struct music_queue queue;
+	memset(&queue,0,sizeof(struct music_queue));
 	//====== process arguments ======
 	int option_index = 0;
 	struct option long_opts[] = {
 		{"shuffle",no_argument,0,'s'},
 		{"help",no_argument,0,'h'},
 		{"disable-autoplay",no_argument,0,'d'},
+		{"repeat-all",no_argument,0,'r'},
 		{0,0,0,0},
 	};
 	for (;;){
-		int result = getopt_long(argc,argv,"shd",long_opts,&option_index);
+		int result = getopt_long(argc,argv,"shard",long_opts,&option_index);
 		if (result == -1) break;
 		switch (result){
 			case 's':
@@ -97,6 +103,9 @@ int main(int argc, char **argv){
 			return 0;
 			case 'd':
 			autoplay = 0;
+			break;
+			case 'r':
+			queue.repeat = 2;
 			break;
 		}
 	}
@@ -120,8 +129,6 @@ int main(int argc, char **argv){
 	//setup mixer callback for the visualiser
 	Mix_SetPostMix(visualiser_callback,NULL);
 	//====== load music ======
-	struct music_queue queue;
-	memset(&queue,0,sizeof(struct music_queue));
 	int count = queue_load(argv+optind,argc-optind,&queue);
 	printf("%d files loaded\n",count);
 	if (shuffle) queue_shuffle(&queue);
@@ -231,12 +238,20 @@ int main(int argc, char **argv){
 				case KEY_PPAGE:
 				queue.selected_song_index = MAX(0,queue.selected_song_index-LINES+2);
 				break;
+				//====== toggle repeat ======
+				case 'r':
+				queue.repeat++; queue.repeat %= 3;
+				break;
 
 			}
 		}
 		//====== autoplay ======
 		if (!Mix_PlayingMusic()) queue.playback_status = PLAYBACK_STOPPED;
-		if (autoplay && !Mix_PlayingMusic()) queue_next(&queue);
+		if (autoplay && !Mix_PlayingMusic()){
+			if (queue.repeat != 1) queue_next(&queue); //repeat not one
+			if (queue.repeat == 1) queue_repeat_song(&queue);
+			if (queue.repeat == 2 && queue.current_song_index == queue.song_count-1) queue_restart(&queue);
+		}
 		//====== handle sigwinch ======
 		if (sigwinch_occured){
 			sigwinch_occured = 0;
@@ -330,6 +345,9 @@ void playback_status_window_update(WINDOW *window,struct music_queue *queue){
 	int seconds_elapsed = Mix_GetMusicPosition(queue->songs[queue->current_song_index].song);
 	int seconds_remaining = Mix_MusicDuration(queue->songs[queue->current_song_index].song);
 	if (width >= 24) mvwprintw(window,1,12,"%d:%02d / %d:%02d",seconds_elapsed/60,seconds_elapsed%60,seconds_remaining/60,seconds_remaining%60);
+	//print repeat status
+	char *repeat_strings[] = {"none","one","all"};
+	if (width >= 37) mvwprintw(window,1,25,"repeat: %s",repeat_strings[queue->repeat]);
 	//print artist and song name
 	if (height >= 4) mvwaddnwstr(window,2,1,str_to_wchar(queue->songs[queue->current_song_index].path),width-2);
 	if (height >= 5) mvwaddnwstr(window,3,1,str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)),width-2);
