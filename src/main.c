@@ -122,7 +122,7 @@ int main(int argc, char **argv){
 		sdlerror("SDL_Init");
 		return 1;
 	}
-	if (Mix_OpenAudio(48000, MIX_DEFAULT_FORMAT, 2, 4096) != 0){
+	if (Mix_OpenAudio(48000, AUDIO_S16SYS, 2, 4096) != 0){
 		sdlerror("Mix_OpenAudio");
 		return 1;
 	}
