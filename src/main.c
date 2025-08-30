@@ -50,6 +50,7 @@ enum colour_pairs {
 void queue_window_update(WINDOW *queue_window,struct music_queue *queue);
 void playback_status_window_update(WINDOW *playback_status_window,struct music_queue *queue);
 void sigwinch_handler(int sig);
+int wch_get_count_for_width(wchar_t *str,int target_width);
 wchar_t *str_to_wchar(const char *str);
 
 void print_help(char *name){
@@ -307,7 +308,8 @@ void queue_window_update(WINDOW *window,struct music_queue *queue){
 	for (int i = MAX(0,queue->selected_song_index-highlight_top_offset); i < queue->song_count; i++){
 		if (y >= height-2) break;
 		//wow isnt this function name so easy to understand
-		mvwaddnwstr(window,y+1,1,str_to_wchar(queue->songs[i].name),width-2);
+		wchar_t *wch_str = str_to_wchar(queue->songs[i].name);
+		mvwaddnwstr(window,y+1,1,wch_str,wch_get_count_for_width(wch_str,width-2));
 		if (i == queue->selected_song_index) mvwchgat(window,y+1,1,width-2,A_UNDERLINE | A_DIM,PAIR_DEFAULT,NULL);
 		if (i == queue->selected_song_index) cursor_y = y;
 		if (i == queue->current_song_index) mvwchgat(window,y+1,1,width-2,A_REVERSE,PAIR_DEFAULT,NULL);
@@ -349,12 +351,26 @@ void playback_status_window_update(WINDOW *window,struct music_queue *queue){
 	char *repeat_strings[] = {"none","one","all"};
 	if (width >= 37) mvwprintw(window,1,25,"repeat: %s",repeat_strings[queue->repeat]);
 	//print artist and song name
-	if (height >= 4) mvwaddnwstr(window,2,1,str_to_wchar(queue->songs[queue->current_song_index].path),width-2);
-	if (height >= 5) mvwaddnwstr(window,3,1,str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)),width-2);
-	if (height >= 6) mvwaddnwstr(window,4,1,str_to_wchar(Mix_GetMusicArtistTag(queue->songs[queue->current_song_index].song)),width-2);
+	wchar_t *title_str = wcsdup(str_to_wchar(Mix_GetMusicTitleTag(queue->songs[queue->current_song_index].song)));
+	wchar_t *artist_str = wcsdup(str_to_wchar(Mix_GetMusicArtistTag(queue->songs[queue->current_song_index].song)));
+	wchar_t *path_str = wcsdup(str_to_wchar(queue->songs[queue->current_song_index].path));
+	if (height >= 4) mvwaddnwstr(window,2,1,path_str,wch_get_count_for_width(path_str,width-2));
+	if (height >= 5) mvwaddnwstr(window,3,1,title_str,wch_get_count_for_width(title_str,width-2));
+	if (height >= 6) mvwaddnwstr(window,4,1,artist_str,wch_get_count_for_width(artist_str,width-2));
+	free(title_str);
+	free(artist_str);
+	free(path_str);
 	//refresh
 	wrefresh(window);
 }
 void sigwinch_handler(int sig){
 	sigwinch_occured = 1;
+}
+int wch_get_count_for_width(wchar_t *str,int target_width){
+	int width = 0;
+	for (int i = 0; i < wcslen(str); i++){
+		width += wcwidth(str[i]);
+		if (width > target_width) return i;
+	}
+	return wcslen(str);
 }
